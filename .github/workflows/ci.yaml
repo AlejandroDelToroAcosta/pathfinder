@@ -44,3 +44,38 @@ jobs:
           echo "artifact=${ARTIFACT}" >> $GITHUB_OUTPUT
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
 
+  build:
+    runs-on: ubuntu-22.04
+    needs: archetype
+
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Restaurar cache de Maven
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: maven-dependencies-${{ needs.archetype.outputs.artifact }}-${{ needs.archetype.outputs.version }}
+
+      - name: Build y tests con Maven
+        run: mvn clean compile test package verify
+
+      - name: Subir JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: jar-file
+          path: target/*.jar
+
+      - name: Subir reporte JaCoCo
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: target/site/jacoco
+
